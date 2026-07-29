@@ -8,7 +8,7 @@
 <p align="center">
   <em>桌面级四足机器狗 — 语音交互·手势识别·AI对话·网页控制</em>
   <br>
-  <strong>总物料成本 <¥100 <s>¥150</s>，全开源</strong>
+  <strong>总物料成本 ≈¥50，全开源</strong>
 </p>
 
 <p align="center">
