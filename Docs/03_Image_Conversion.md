@@ -5,6 +5,10 @@
 > 1. **Star ⭐** — 点击 GitHub 仓库右上角 ⭐ Star，收藏本项目，方便以后找到
 > 2. **Fork 🍴** — 点击 Fork，把项目复制到你的 GitHub 账号下，可以自由修改
 > 3. **Download 📥** — 点击绿色 **Code** 按钮 → **Download ZIP**，下载到本地开始复刻
+>
+> 📸 **操作示意图：**
+>
+> ![Star-Fork-Download](../Picture/demo.jpg)
 
 ---
 
