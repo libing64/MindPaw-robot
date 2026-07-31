@@ -134,7 +134,17 @@
 
 ## 🚀 如何复刻
 
-从零开始做一台 MindPaw，按这个顺序走：
+从零开始做一台 MindPaw，按这个顺序走。
+
+> ⭐ **开始前，请先支持一下这个开源项目：**
+>
+> 1. **Star ⭐** — 点击仓库右上角 ⭐ Star，收藏本项目，方便以后找到
+> 2. **Fork 🍴** — 点击 Fork，把项目复制到你自己的 GitHub，之后可自由修改并提交 PR
+> 3. **Download 📥** — 点击绿色 **Code** 按钮 → **Download ZIP**，或直接 clone：
+
+```bash
+git clone https://github.com/ace-trump-tech/MindPaw.git
+```
 
 ### 第一步：烧录固件（先让代码跑起来）
 
