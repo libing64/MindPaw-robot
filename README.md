@@ -298,6 +298,7 @@ MindPaw/
 
 | 如果你想... | 看这个 |
 |------------|--------|
+| **机器狗送人了，教他怎么玩** | [使用说明书（给不懂技术的人）](Docs/08_Product_Manual.md) |
 | **5 分钟跑起来** | [快速上手指南](Docs/06_Quick_Start.md) |
 | **编译烧录代码** | [固件烧录指南](Docs/04_Firmware_Flashing.md) |
 | **看懂/修改 PCB** | [硬件设计导入指南](Docs/01_Hardware_Guide.md) |
