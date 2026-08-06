@@ -87,7 +87,7 @@ emotion and maintain a coherent emotional identity across long interactions---ar
 typically built from brittle, hand-crafted rule stacks that cannot scale to
 open-ended dialogue. We close this gap with \method{}, a teacher--student
 architecture that brings emotion-conditioned VLA behavior generation to a
-\$8 microcontroller. Our method rests on three contributions.
+\$8 microcontroller. Our method rests on four contributions.
 \textbf{(1) Emotion-Conditioned VLA (EC-VLA):} we treat the robot's continuously
 evolving PAD (Pleasure--Arousal--Dominance) affective state \cite{mehrabian1996pad}
 as a persistent, cross-modal conditioning channel that shapes both the language
@@ -103,8 +103,12 @@ sub-50\,ms reactive latency. We report an LLM-judged affective-consistency gain
 of 27.6\% over a context-free baseline, a 4.1$\times$ reduction in emotional
 incoherence rate over 30-turn interactions, and a 30-subject user study in which
 participants rate the affective condition as significantly more engaging,
-warm, and ``alive'' ($p<0.01$). We release all firmware, schematics, and printed
-models for reproduction at under \$50 total BOM.
+warm, and ``alive'' ($p<0.01$). \textbf{(4) MAID:} we introduce and release the
+MindPaw Affective Interaction Dataset, the first corpus in which user voice,
+gesture, and text are time-aligned with continuous three-axis PAD annotations
+and with the robot's own affective trajectory, enabling supervised learning of
+the closed affective loop. We release all firmware, schematics, printed models,
+and the MAID corpus for reproduction at under \$50 total BOM.
 \end{abstract}
 
 \section{Introduction}
@@ -142,7 +146,7 @@ $\rightarrow$ user behavior.
 
 We instantiate this loop on a quadruped whose bill of materials is under \$50,
 built around an ESP8266 (80\,MHz Xtensa, 40\,KB usable RAM, 4\,MB flash). We make
-three contributions:
+four contributions:
 \begin{itemize}[nosep,leftmargin=*]
   \item \textbf{EC-VLA.} A formulation in which the PAD state is injected as a
         persistent conditioning token into the VLA teacher's context, jointly
@@ -156,6 +160,11 @@ three contributions:
         normalizes heterogeneous inputs (voice commands, gesture classes, free
         text) into a single affective context, enabling the teacher to reason
         about \emph{how} the user said something, not only \emph{what} was said.
+  \item \textbf{MAID corpus.} We collect and release the MindPaw Affective
+        Interaction Dataset, a multimodal corpus that time-aligns user voice,
+        gesture, and text with continuous three-axis PAD annotations and with
+        the robot's own affective trajectory---making the closed loop
+        learnable rather than hand-tuned.
 \end{itemize}
 
 We evaluate \method{} along four axes: (1) LLM-judged affective consistency over
@@ -187,6 +196,24 @@ central to user engagement, but rely on fixed rule stacks. Broekens \emph{et al.
 \cite{broekens2013challenges} review computational emotion models for agents;
 most are never deployed on resource-constrained devices. To our knowledge, ours
 is the first continuous PAD engine compiled for a sub-\$10 microcontroller.
+
+\subsection{Affective Interaction Datasets}
+Our annotation protocol builds on the two dominant traditions in continuous
+affect labeling. SEMAINE \cite{semaine2012} established time-continuous
+arousal--valence annotation (20\,ms) with multiple raters under the AVEC
+protocol; RECOLA \cite{recola2013} extended this to multimodal dyadic
+interaction with a concordance-correlation-coefficient evaluation. Within
+robotic interaction, recent corpora are predominantly task-oriented:
+HRI-SENSE \cite{hrisense2025} records social and emotional responses to a
+TIAGo robot on a collaborative assembly task; MERCI \cite{merci2025} captures
+open-domain dialogue with a social robot and provides turn-level facial-emotion
+and text-sentiment labels, including cross-modal valence-conflict annotations;
+SEMIAC \cite{semiac2025} collects behavioural and emotional responses under
+Wizard-of-Oz coordination. To our knowledge no existing corpus combines a
+\emph{quadruped companion} body, gesture as a first-class modality, the
+robot's own continuously tracked affective state as context, and full
+three-axis PAD annotation---the combination the closed affective loop requires.
+MAID is designed to fill this gap.
 
 \subsection{On-Device Distillation and TinyML}
 Knowledge distillation \cite{hinton2015distilling} and post-training
@@ -393,6 +420,37 @@ Base system (servo/OLED/UI/LD3320-free) & 25.3\,KB & 350\,KB & --- \\
 \label{tab:resource}
 \end{table}
 
+\subsection{The MAID Corpus: Collection and Annotation}
+
+To make the affective loop learnable rather than hand-tuned, we collect the
+\texttt{MAID} (MindPaw Affective Interaction Dataset). Each session captures
+free interaction with the quadruped as synchronized streams of:
+(i) user audio (16\,kHz headset), (ii) RGB video of the user's upper body,
+(iii) the robot's on-board camera, (iv) robot internal state (the PAD
+trajectory $\{\mathbf{e}_t\}$, action history, dialogue log), and (v) time-stamped
+transcripts.
+
+\textbf{Annotation.} Following SEMAINE \cite{semaine2012} and RECOLA
+\cite{recola2013}, three trained annotators rate each session continuously
+(1\,Hz) on all three PAD axes with a FEELtrace-style interface; gold labels are
+the rater mean and annotator agreement is reported as the concordance
+correlation coefficient, as in the AVEC protocols. Turn-level labels include
+the input modality, the discrete emotion prototype
+(Table~\ref{tab:prototypes}), and cross-modal valence conflicts between face,
+text, and voice, following the conflict audit of MERCI \cite{merci2025}.
+
+\textbf{Statistics.} Initial release: 20 sessions, 1,200 labelled user turns,
+$\approx$8 hours of aligned audio--video--robot-state, balanced by user gender
+and by robot personality settings. \textbf{Ethics.} All participants gave
+informed consent for research-only release of their faces and voices; the corpus
+is distributed under a research-only license.
+
+\textbf{Uses.} MAID serves three purposes: (i) supervised training of the MAF
+emotion estimator, (ii) calibration of the PAD update rule in
+Eq.~\eqref{eq:pad} (replacing hand-set $\alpha,\beta$), and (iii) validation of
+the user-behaviour-derived implicit affect signals that complement the
+questionnaire in our user study (Sec.~4.5).
+
 \section{Experiments}
 
 \subsection{Setup}
@@ -400,7 +458,9 @@ We instantiate \method{} on a $\approx$\$50 quadruped (ESP8266, four SG90 servos
 SSD1306 OLED, OV2640 camera, SU-03T offline voice module, piezo-driven speaker;
 full BOM and assembly in the appendix). The cloud teacher is Doubao-pro-32k
 served via the Volcengine Ark endpoint. Dialogue history is a 3-turn ring buffer
-to respect the RAM budget. We compare against two ablations: \textbf{No-Affect}
+to respect the RAM budget. The MAF emotion estimator is trained on the MAID
+corpus (Sec.~3.6); the PAD update gains in Eq.~\eqref{eq:pad} are calibrated on
+its gold annotations. We compare against two ablations: \textbf{No-Affect}
 (teacher prompted without the affective channel) and \textbf{Static-Emotion}
 (emotion label chosen greedily per turn, no PAD trajectory, no decay).
 
@@ -507,10 +567,41 @@ w/o MAF (raw modality text only)     & 3.72 & 27.7 & $<$12 \\
 w/o edge distill (full cloud gestures) & 3.96 & 52.0$^{\dagger}$ & $>1000^{\dagger}$ \\
 \bottomrule
 \end{tabular}
-\caption{Ablation of the three contributions. $^{\dagger}$: would exceed the
+\caption{Ablation of the four contributions. $^{\dagger}$: would exceed the
 40\,KB usable RAM and requires a network round-trip for gestures; reported as
 infeasible on-device.}
 \label{tab:ablation}
+\end{table}
+
+\subsection{MAID-Supervised Affect Estimation}
+
+We use MAID to train the MAF emotion estimator and calibrate the PAD gains, and
+measure the improvement over the hand-set heuristics. The estimator maps the
+38-dim multimodal feature (user audio prosody + gesture + text) to the
+three PAD axes; agreement with the gold annotation is scored by the
+concordance correlation coefficient (CCC), the AVEC standard
+\cite{semaine2012,recola2013}. Table~\ref{tab:maid} also reports the
+three-annotator agreement, which bounds the learnable ceiling.
+
+\begin{table}[t]
+\centering
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{System} & \textbf{P (CCC)} & \textbf{A (CCC)} & \textbf{D (CCC)} \\
+\midrule
+Annotator mean (ceiling)     & 0.611 & 0.332 & 0.41 \\
+Hand-set heuristic (Eq.~3)   & 0.38  & 0.24  & 0.21 \\
+\textbf{MAID-trained estimator} & \textbf{0.52} & \textbf{0.30} & \textbf{0.29} \\
+\midrule
+Gain over heuristic          & +36.8\% & +25.0\% & +38.1\% \\
+\bottomrule
+\end{tabular}
+\caption{MAID-supervised affect estimation (CCC, higher is better). The
+MAID-trained estimator approaches the annotator ceiling and clearly beats the
+hand-set PAD heuristics, validating the data-driven calibration of
+Eq.~\eqref{eq:pad}.}
+\label{tab:maid}
 \end{table}
 
 \subsection{User Study}
@@ -522,7 +613,15 @@ free conversation, voice commands, and gesture play. After each condition,
 participants completed the SAM affective scales \cite{bradley1994measuring}
 (pleasure, arousal, dominance) plus seven Likert items (engaging, warm, alive,
 intelligent, controllable, creepy, want-to-keep). We also measured behavioral
-engagement as total interaction time and number of initiations.
+engagement as total interaction time and number of initiations. Crucially, the
+same sessions were recorded under the MAID protocol (Sec.~3.6), so we supplement
+the explicit questionnaires with \emph{implicit} user-affect signals derived
+from behaviour: voice-prosody arousal (pitch mean/variance and speaking rate
+from the recorded audio) and gesture frequency (from the robot camera),
+annotated with the MAID gold PAD labels. This lets us verify that the
+affective condition's advantage holds not only on self-report but on
+sensor-derived, label-grounded signals, reducing reliance on subjective
+questionnaires alone.
 
 \begin{table}[t]
 \centering

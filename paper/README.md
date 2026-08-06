@@ -28,31 +28,38 @@ pdflatex neurips_2024.tex
 ## Paper Outline
 
 - **Abstract** — closed affective loop on a \$8 MCU, three contributions, headline numbers.
-- **1 Introduction** — the VLA vs. companion-robot gap; emotion as a first-class conditioning channel.
-- **2 Related Work** — VLA, affective computing/social robots, TinyML distillation, LLM-as-judge.
+- **1 Introduction** — the VLA vs. companion-robot gap; emotion as a first-class conditioning channel; four contributions (incl. the MAID dataset).
+- **2 Related Work** — VLA, affective computing/social robots, **affective interaction datasets (SEMAINE/RECOLA/MERCI/HRI-SENSE/SEMIAC)**, TinyML distillation, LLM-as-judge.
 - **3 Method**
   - 3.1 Overview (closed affective loop)
   - 3.2 PAD Emotion Engine (Eq. 1–2, <100 B RAM)
   - 3.3 Multi-modal Affective Fusion (MAF)
   - 3.4 Emotion-Conditioned VLA (EC-VLA) + coherence proposition
   - 3.5 Affective Edge Distillation (Eq. 4–5, int8 MLP, parametric motion)
+  - 3.6 **MAID corpus** — collection + continuous-PAD annotation protocol (SEMAINE/RECOLA-style), statistics, ethics
 - **4 Experiments**
   - LLM-judged affective consistency (Table 3)
   - PAD trajectory quality (Table 4)
   - Edge distillation (Table 5)
   - Ablation (Table 6)
-  - 30-subject user study with SAM (Table 7)
+  - **MAID-supervised affect estimation (Table 7)** — CCC vs. annotator ceiling and hand-set heuristics
+  - 30-subject user study with SAM + **implicit behaviour signals (voice prosody, gesture frequency)** (Table 8)
   - Threats to validity
 - **5 Conclusion** + Broader Impact
 
 ## ⚠️ IMPORTANT — Before You Submit
 
-The quantitative results in this draft (Tables 3–7) are **plausible
+The quantitative results in this draft (Tables 3–8) are **plausible
 placeholders** written to make the architecture concrete. They are **not**
 measured. Before any submission you MUST:
 
 1. **Train the gesture student.** Run `tools/distill_gesture.py` from the repo
    root to generate real int8 weights; report the real accuracy.
+2. **Collect the MAID corpus.** The dataset (Sec. 3.6, Table 7) is the paper's
+   fourth contribution and currently exists only as a protocol. You must
+   actually collect it: IRB/consent, 3 continuous-PAD annotators, the 20-session
+   pilot, and release on a data host with a research-only license. The CCC
+   numbers in Table 7 are placeholders.
 2. **Run the LLM-judge experiment.** Replay the 300-turn corpus with real
    teacher calls and re-measure Table 3.
 3. **Run the user study (IRB).** 30 subjects, SAM + Likert, paired t-tests.
