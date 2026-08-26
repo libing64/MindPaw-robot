@@ -20,11 +20,6 @@
     <img src="https://img.shields.io/github/forks/ace-trump-tech/MindPaw?style=social" alt="GitHub Forks">
   </a>
   &nbsp;&nbsp;&nbsp;
-  <a href="https://github.com/ace-trump-tech/MindPaw/commits/main" target="_blank">
-    <img src="https://img.shields.io/github/last-commit/ace-trump-tech/MindPaw?label=最后更新&color=blue&style=flat-square" alt="Last Commit">
-  </a>
-</p>
-
 <p align="center">
   <a href="Docs/06_Quick_Start.md">
     <img src="https://img.shields.io/badge/Quick_Start-5分钟上手-brightgreen" alt="Quick Start">
