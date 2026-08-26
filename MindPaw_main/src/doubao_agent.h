@@ -8,6 +8,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <ESP8266HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <ArduinoJson.h>
 #include "doubao_config.h"
 
@@ -16,9 +17,11 @@ public:
     DoubaoAgent();
 
     // ---------- 配置 ----------
-    void configure(const String& apiKey, const String& endpointId);
+    void configure(const String& apiKey, const String& endpointId,
+                   const String& baseUrl = "");
     bool isConfigured() const;
     const String& getLastReplyText() const { return _lastReplyText; }
+    const String& getBaseUrl() const { return _baseUrl; }
 
     // ---------- 核心 API 调用 (阻塞 2-8 秒，在 loop 中调用) ----------
     // userText: 用户输入文本
@@ -50,6 +53,7 @@ public:
 private:
     String _apiKey;
     String _endpointId;
+    String _baseUrl;
     bool _busy;
     bool _enabled;
     String _lastReplyText;
@@ -68,7 +72,7 @@ private:
     char _responseBuf[AGENT_RESP_BUF_SIZE];
 
     // 复用 HTTP 客户端
-    WiFiClient _client;
+    WiFiClientSecure _client;
     HTTPClient _http;
 
     // ---------- 内部方法 ----------

@@ -163,6 +163,7 @@
         const statusText = document.getElementById('statusText');
         let isWaiting = false;
         let pollTimer = null;
+        let activeRequestId = '';
 
         // 检查 AI 状态
         async function checkStatus() {
@@ -208,6 +209,7 @@
                     isWaiting = false;
                     sendBtn.disabled = false;
                 } else if (data.status === 'queued') {
+                    activeRequestId = data.request_id || '';
                     // 排队等待，开始轮询
                     pollForReply();
                 }
@@ -228,7 +230,9 @@
                 try {
                     const resp = await fetch('/aiReply');
                     const data = await resp.json();
-                    if (data.reply && data.reply.length > 0) {
+                    if (data.request_id === activeRequestId &&
+                        (data.status === 'completed' || data.status === 'failed') &&
+                        data.reply && data.reply.length > 0) {
                         clearInterval(pollTimer);
                         removeTyping();
                         addMessage(data.reply, 'robot');
@@ -258,7 +262,11 @@
             const div = document.createElement('div');
             div.className = 'msg ' + type;
             if (type === 'robot') {
-                div.innerHTML = '<span class="robot-icon">🐕</span> ' + text;
+                const icon = document.createElement('span');
+                icon.className = 'robot-icon';
+                icon.textContent = '🐕';
+                div.appendChild(icon);
+                div.appendChild(document.createTextNode(' ' + text));
             } else if (type === 'typing') {
                 div.textContent = '⏳ ' + text;
             } else {
@@ -270,13 +278,10 @@
 
         // 清除历史
         function clearHistory() {
-            fetch('/aiConfig', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                body: 'apiKey=&endpointId='
+            fetch('/aiClearHistory', {
+                method: 'POST'
             }).then(() => {
-                // 重新加载 AI Agent 清空历史
-                location.reload();
+                activeRequestId = '';
             });
             // 页面内清空
             chatBox.innerHTML = '';

@@ -45,6 +45,7 @@
 - [你需要准备什么](#-你需要准备什么)
 - [如何复刻](#-如何复刻)
 - [项目结构](#-项目结构)
+- [AI Infra 网关](#-ai-infra-网关)
 - [硬件接线图](#-硬件接线图)
 - [文档索引](#-文档索引)
 - [常见问题](#-常见问题)
@@ -63,6 +64,18 @@
 
 > 这个项目是从零开始自己做的，不是用现成的开发板套件。所以如果你想学习怎么把 ESP8266、舵机、摄像头、语音模块、AI 全部整合在一起，这里的代码和文档应该能帮到你。
 
+## 🚦 从哪里开始
+
+这个仓库分为两条互不阻塞的路径：
+
+| 路径 | 适合人群 | 入口 |
+|------|---------|------|
+| **MindPaw Demo** | 初学者、硬件爱好者，目标是把机器狗复现并玩起来 | [MindPaw_main/README.md](MindPaw_main/README.md) |
+| **MindPaw AI Infra** | AI Infra、边缘计算和 Agent 研究者 | [ai-infra/README.md](ai-infra/README.md) |
+| **SCH & PCB** | 想自己画板、打样或排查供电/接线问题的人 | [SCH&PCB/README.md](SCH%26PCB/README.md) |
+
+初学者不需要安装 Python、Docker 或 AI Gateway；完成基础 Demo 后，再按兴趣进入研究路径。两条路径共享同一套固件和硬件，Gateway 地址留空即可回到原有直连模式。
+
 ---
 
 ## ✨ 功能总览
@@ -73,6 +86,7 @@
 | **手势控制** | 在摄像头前挥手/握拳/指点 | 识别手势后执行对应动作 |
 | **网页控制** | 手机浏览器打开 192.168.4.1 | 完整的遥控界面，可点按控制 |
 | **AI 对话** | 网页聊天 / 语音说"你好" | 调用豆包 API，用动作+表情回复 |
+| **AI Infra 网关** | 可选配置 Gateway 地址 | 面向研究者的 AI 基础设施教程；初学者可以完全跳过 |
 | **情感反应** | 持续运行中自动变化 | 根据交互频率和内容，表现出开心/无聊/难过等情绪 |
 | **表情显示** | OLED 屏幕显示 | 7 种表情 + 天气 + 时间 |
 | **声音反馈** | 扬声器播放旋律 | 开机/命令确认/情绪表达共 10 种音效 |
@@ -208,6 +222,41 @@ pio run -t uploadfs
 
 图文步骤 → [Docs/07_API_Guide.md](Docs/07_API_Guide.md)
 
+### 第四步（可选）：启动 AI Infra 网关
+
+`ai-infra` 是可选的独立 AI 基础设施层。它负责上游模型适配、鉴权、超时和结构化输出校验，适合希望研究 Agent、模型接入和边缘设备协同的开发者。初学者可以跳过这一节，直接使用原有的 ESP8266 直连豆包模式，不会影响机器狗的基础功能和 AI 对话。
+
+```bash
+cd ai-infra
+cp .env.example .env
+# 编辑 .env，配置 GATEWAY_TOKEN、AI_PROVIDER 和上游 API Key
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+uvicorn gateway.app:app --host 0.0.0.0 --port 8000
+```
+
+没有云端 Key 时，可以将 `.env` 中的 `AI_PROVIDER` 设为 `mock`，先验证设备链路。然后打开 `http://192.168.4.1/aiconfig.html`：
+
+- **API Key**：填写 `GATEWAY_TOKEN`
+- **推理端点 ID**：填写 `mindpaw`
+- **AI Gateway 地址**：填写 `http://网关IP:8000/v1/chat/completions`
+
+Docker 用户可以运行 `cd ai-infra && docker compose up --build -d`。完整说明见 [ai-infra/README.md](ai-infra/README.md)。
+
+### 两种使用路径
+
+| 目标 | 建议路径 |
+|------|---------|
+| 第一次复现机器狗、学习 ESP8266 和 Arduino | 跳过 `ai-infra`，直接配置豆包 API |
+| 研究 AI Agent、模型路由、结构化输出和边缘网关 | 启动 `ai-infra`，通过 Gateway 接入设备 |
+
+这两条路径共享同一套固件和网页功能，可以随时从直连模式切换到 Gateway 模式。
+
+### 为什么先放在同一个仓库？
+
+当前阶段保持 monorepo 的好处是：初学者只需下载一个仓库即可复现，研究者也能在同一个仓库中阅读固件、协议和 Gateway。等接口稳定、网关需要服务其他机器人后，再把 `ai-infra` 独立成可插拔仓库或 Python 包，并保留本仓库的版本化配置示例。
+
 ### 第五步：配置语音模块
 
 HLK-V20 需要用电脑配置好之后才能用：
@@ -229,9 +278,11 @@ MindPaw/
 ├── 3Dmodel/                    ← 3D 打印件（body.stl / bottom.stl / foot.stl）
 │
 ├── SCH&PCB/                    ← 电路设计文件（立创 EDA 专业版）
-│   └── MindPaw_SCH&PCB.epro2
+│   ├── MindPaw_SCH&PCB.epro2
+│   └── README.md                ← 硬件复现、打样和排障入口
 │
-├── MindPaw_main/               ← 固件源代码（主要在这里干活）
+├── MindPaw_main/               ← 固件源代码（初学者 Demo 入口）
+│   ├── README.md                ← 编译、烧录、验收和故障排查
 │   ├── src/                    ← C++ 源码
 │   │   ├── main.cpp            ← 主程序（入口、Web服务器、舵机动作）
 │   │   ├── image.cpp           ← OLED 屏幕显示的位图数据
@@ -249,6 +300,12 @@ MindPaw/
 │   │   └── distill_gesture.py  ← 手势模型训练脚本
 │   ├── platformio.ini          ← 编译配置文件
 │   └── PIN_WIRING.md           ← 引脚接线图
+│
+├── ai-infra/                   ← 独立 AI Gateway（可选，研究者教程）
+│   ├── gateway/app.py          ← OpenAI 兼容入口、鉴权和上游适配
+│   ├── .env.example            ← 网关配置模板
+│   ├── Dockerfile              ← 容器部署
+│   └── README.md               ← 研究问题、实验路线和网关启动说明
 │
 ├── Picture/                    ← 图片资源
 │   ├── MindPaw_oled/           ← 表情源文件（BMP）
@@ -307,6 +364,9 @@ MindPaw/
 | **改 OLED 表情** | [图片转换指南](Docs/03_Image_Conversion.md) |
 | **申请 API 密钥** | [API 密钥获取指南](Docs/07_API_Guide.md) |
 | **所有引脚定义** | [PIN_WIRING.md](MindPaw_main/PIN_WIRING.md) |
+| **从零复现固件 Demo** | [MindPaw_main/README.md](MindPaw_main/README.md) |
+| **研究 AI Infra 和边缘-云 Agent** | [ai-infra/README.md](ai-infra/README.md) |
+| **导入/修改/打样 PCB** | [SCH&PCB/README.md](SCH%26PCB/README.md) |
 
 ---
 

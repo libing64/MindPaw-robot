@@ -17,9 +17,15 @@ DoubaoAgent::DoubaoAgent() {
 }
 
 // ==================== 配置 ====================
-void DoubaoAgent::configure(const String& apiKey, const String& endpointId) {
+void DoubaoAgent::configure(const String& apiKey, const String& endpointId,
+                            const String& baseUrl) {
     _apiKey = apiKey;
     _endpointId = endpointId;
+    _baseUrl = baseUrl;
+    _baseUrl.trim();
+    if (_baseUrl.length() == 0) {
+        _baseUrl = String(DOUBAO_BASE_URL) + DOUBAO_API_PATH;
+    }
     _enabled = (apiKey.length() > 0 && endpointId.length() > 0);
     _lastReplyText = "";
 
@@ -61,7 +67,10 @@ bool DoubaoAgent::buildRequestBody(const String& userText) {
 
     // 2. 对话历史 (循环缓冲)
     for (uint8_t i = 0; i < _historyCount; i++) {
-        uint8_t idx = (_historyIndex + i) % AGENT_MAX_HISTORY;
+        // _historyIndex points to the next slot to overwrite. The oldest
+        // entry is therefore one slot after it when the buffer is full.
+        uint8_t oldest = (_historyCount == AGENT_MAX_HISTORY) ? _historyIndex : 0;
+        uint8_t idx = (oldest + i) % AGENT_MAX_HISTORY;
         if (_history[idx].user.length() == 0) continue;
 
         JsonObject histUser = messages.createNestedObject();
@@ -235,7 +244,7 @@ bool DoubaoAgent::ask(const String& userText, AgentResponse& response) {
     // 2. 发送 HTTP POST (带重试)
     bool httpSuccess = false;
     int httpCode = -1;
-    String fullUrl = String(DOUBAO_BASE_URL) + DOUBAO_API_PATH;
+    String fullUrl = _baseUrl;
 
     for (int retry = 0; retry <= AGENT_MAX_RETRIES; retry++) {
         if (retry > 0) {
@@ -243,7 +252,14 @@ bool DoubaoAgent::ask(const String& userText, AgentResponse& response) {
             delay(1000);
         }
 
-        _http.begin(_client, fullUrl);
+        // ESP8266 cannot keep a CA bundle cheaply. The gateway deployment is
+        // preferred; direct mode uses TLS with certificate verification
+        // disabled for compatibility with existing boards.
+        _client.setInsecure();
+        if (!_http.begin(_client, fullUrl)) {
+            Serial.println("DOUBAO: HTTP client begin failed");
+            continue;
+        }
         _http.setTimeout(AGENT_HTTP_TIMEOUT);
         _http.addHeader("Content-Type", "application/json");
         _http.addHeader("Authorization", "Bearer " + _apiKey);

@@ -91,9 +91,14 @@ DoubaoAgent aiAgent;            // 豆包 AI Agent
 MotionEmotion motionEmotion;    // 情感动作模块
 AgentState agentState = AGENT_IDLE; // Agent 状态
 String pendingAgentText = "";   // 待处理文本
+String pendingAgentRequestId = "";
+String activeAgentRequestId = "";
+String lastAgentRequestId = "";
+String agentResultStatus = "idle"; // idle/queued/processing/completed/failed
 bool pendingAgentInput = false; // 待处理标志
 unsigned long agentCooldownMs = 0; // 请求冷却
 String lastAgentReply = "";     // 最近 AI 回复
+uint32_t agentRequestSeq = 0;
 
 //---------------情感计算模块--------------------------
 EmotionEngine emotionEngine;       // PAD 情感状态机
@@ -102,7 +107,7 @@ MultimodalFusion fusion;           // 多模态融合层
 uint8_t gestureFrameBuffer[1200];  // 40×30 灰度缓冲 (GestureNN 输入)
 
 //---------------函数前向声明--------------------------
-void processAgentInput(const String& text);
+void processAgentInput(const String& text, bool contextReady = false);
 void dispatchAgentResponse(const AgentResponse& resp);
 void handleGestureNN(const GestureNNResult& nnResult);
 //---------------文件系统部分--------------------------
@@ -244,20 +249,25 @@ server.on("/front", HTTP_GET, [](AsyncWebServerRequest *request) {// 当访问 /
             return;
         }
 
-        // 多模态融合：构建情感上下文并注入 agent
-        MultimodalContext ctx = fusion.processText(text);
-        aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-        const PADState& pad = emotionEngine.getState();
-        motionEmotion.setEmotionalIntensity(pad.pleasure, pad.arousal);
-        processAgentInput(ctx.userText);
+        // processAgentInput owns text fusion so the emotion state is updated once.
+        processAgentInput(text);
 
-        // 立即返回 queued 状态 — 前端轮询 /aiReply
-        request->send(202, "application/json", "{\"status\":\"queued\"}"); });
+        DynamicJsonDocument queuedDoc(192);
+        queuedDoc["status"] = "queued";
+        queuedDoc["request_id"] = pendingAgentRequestId;
+        String queuedJson;
+        serializeJson(queuedDoc, queuedJson);
+        request->send(202, "application/json", queuedJson); });
 
     // 轮询获取最新 AI 回复
     server.on("/aiReply", HTTP_GET, [](AsyncWebServerRequest *request)
               {
-        String json = "{\"reply\":\"" + lastAgentReply + "\"}";
+        DynamicJsonDocument replyDoc(512);
+        replyDoc["status"] = agentResultStatus;
+        replyDoc["request_id"] = lastAgentRequestId;
+        replyDoc["reply"] = lastAgentReply;
+        String json;
+        serializeJson(replyDoc, json);
         request->send(200, "application/json", json); });
 
     // AI 状态查询
@@ -265,7 +275,10 @@ server.on("/front", HTTP_GET, [](AsyncWebServerRequest *request) {// 当访问 /
               {
         String json = "{";
         json += "\"enabled\":" + String(aiAgent.isConfigured() ? "true" : "false") + ",";
-        json += "\"busy\":" + String((agentState == AGENT_BUSY || pendingAgentInput) ? "true" : "false");
+        json += "\"busy\":" + String((agentState == AGENT_BUSY || pendingAgentInput) ? "true" : "false") + ",";
+        json += "\"status\":\"" + agentResultStatus + "\",";
+        json += "\"request_id\":\"" + lastAgentRequestId + "\",";
+        json += "\"baseUrl\":\"" + aiAgent.getBaseUrl() + "\"";
         json += "}";
         request->send(200, "application/json", json); });
 
@@ -288,21 +301,47 @@ server.on("/front", HTTP_GET, [](AsyncWebServerRequest *request) {// 当访问 /
             request->getParam("apiKey", true)->value() : "";
         String endpointId = request->hasParam("endpointId", true) ?
             request->getParam("endpointId", true)->value() : "";
+        String baseUrl = request->hasParam("baseUrl", true) ?
+            request->getParam("baseUrl", true)->value() : "";
+        apiKey.trim();
+        endpointId.trim();
+        baseUrl.trim();
 
-        // 保存到 SPIFFS
-        DynamicJsonDocument doc(256);
-        doc["aiKey"] = apiKey;
-        doc["aiEndpoint"] = endpointId;
-        fs::File file = SPIFFS.open("/ai_config.json", "w");
-        if (file) {
-            serializeJson(doc, file);
-            file.close();
-            Serial.println("AI: Config saved");
+        if (apiKey.length() == 0 || endpointId.length() == 0) {
+            request->send(400, "application/json", "{\"status\":\"error\",\"error\":\"apiKey and endpointId are required\"}");
+            return;
         }
 
-        // 应用配置
-        aiAgent.configure(apiKey, endpointId);
+        // 保存到 SPIFFS
+        DynamicJsonDocument doc(384);
+        doc["aiKey"] = apiKey;
+        doc["aiEndpoint"] = endpointId;
+        doc["aiBaseUrl"] = baseUrl;
+        fs::File file = SPIFFS.open("/ai_config.json", "w");
+        if (!file) {
+            request->send(500, "application/json", "{\"status\":\"error\",\"error\":\"cannot open config storage\"}");
+            return;
+        }
+        size_t written = serializeJson(doc, file);
+        file.close();
+        if (written == 0) {
+            request->send(500, "application/json", "{\"status\":\"error\",\"error\":\"cannot write config storage\"}");
+            return;
+        }
+        Serial.println("AI: Config saved");
 
+        // 应用配置
+        aiAgent.configure(apiKey, endpointId, baseUrl);
+
+        request->send(200, "application/json", "{\"status\":\"ok\"}"); });
+
+    // Clear only the in-memory conversation; credentials remain unchanged.
+    server.on("/aiClearHistory", HTTP_POST, [](AsyncWebServerRequest *request)
+              {
+        aiAgent.clearHistory();
+        lastAgentReply = "";
+        lastAgentRequestId = "";
+        agentResultStatus = "idle";
         request->send(200, "application/json", "{\"status\":\"ok\"}"); });
 
     // AI 聊天页面
@@ -1003,7 +1042,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput(ctx.userText); }
+                  processAgentInput(ctx.userText, true); }
             } else {
                 emojiState = 0;
                 speaker.play(MELODY_HELLO);
@@ -1013,7 +1052,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput(ctx.userText); }
+                  processAgentInput(ctx.userText, true); }
             } else {
                 emojiState = 0;
                 speaker.play(MELODY_HAPPY);
@@ -1023,7 +1062,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput(ctx.userText); }
+                  processAgentInput(ctx.userText, true); }
             } else {
                 emojiState = 5;
                 speaker.play(MELODY_SAD);
@@ -1033,7 +1072,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput(ctx.userText); }
+                  processAgentInput(ctx.userText, true); }
             } else {
                 emojiState = 1;
             }
@@ -1042,7 +1081,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput(ctx.userText); }
+                  processAgentInput(ctx.userText, true); }
             } else {
                 emojiState = 3;
             }
@@ -1051,7 +1090,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput(ctx.userText); }
+                  processAgentInput(ctx.userText, true); }
             } else {
                 emojiState = 4;
                 speaker.play(MELODY_HAPPY);
@@ -1061,7 +1100,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput(ctx.userText); }
+                  processAgentInput(ctx.userText, true); }
             } else {
                 emojiState = 0;
                 speaker.play(MELODY_GOODBYE);
@@ -1073,7 +1112,7 @@ void handleVoiceCommand(VoiceCommand cmd) {
             if (aiAgent.isConfigured()) {
                 { MultimodalContext ctx = fusion.processVoice(cmd);
                   aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-                  processAgentInput("现在几点了"); }
+                  processAgentInput("现在几点了", true); }
             } else {
                 emojiState = 8;
             }
@@ -1112,7 +1151,7 @@ void handleGestureNN(const GestureNNResult& nnResult) {
     // 2. AI 已启用时，构建情感上下文发送给 Agent
     if (aiAgent.isConfigured()) {
         aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
-        processAgentInput(ctx.userText);
+        processAgentInput(ctx.userText, true);
         return;
     }
 
@@ -1140,7 +1179,7 @@ void handleGestureNN(const GestureNNResult& nnResult) {
 
 //---------------统一 AI Agent 入口--------------------------
 // 所有输入 (网页/语音/手势) 都通过此函数发送给 AI
-void processAgentInput(const String& text) {
+void processAgentInput(const String& text, bool contextReady) {
     if (text.length() == 0) return;
 
     // 如果 AI 未配置或正在忙，忽略
@@ -1150,8 +1189,14 @@ void processAgentInput(const String& text) {
     }
 
     // 通过多模态融合层处理 (构建情感上下文)
-    MultimodalContext ctx = fusion.processText(text);
-    aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
+    MultimodalContext ctx;
+    if (contextReady) {
+        ctx = fusion.getLastContext();
+        ctx.userText = text;
+    } else {
+        ctx = fusion.processText(text);
+        aiAgent.setAffectiveContext(fusion.buildAffectivePrompt(ctx));
+    }
 
     // 更新情感强度到运动模块
     const PADState& pad = emotionEngine.getState();
@@ -1159,6 +1204,12 @@ void processAgentInput(const String& text) {
 
     // 存储待处理文本
     pendingAgentText = ctx.userText;
+    agentRequestSeq++;
+    if (agentRequestSeq == 0) agentRequestSeq = 1;
+    pendingAgentRequestId = String("mp-") + String(agentRequestSeq);
+    lastAgentRequestId = pendingAgentRequestId;
+    lastAgentReply = "";
+    agentResultStatus = "queued";
     pendingAgentInput = true;
 
     Serial.printf("AI: Queued with affective context: \"%s\"\n", ctx.emotionDescription.c_str());
@@ -1441,13 +1492,14 @@ attachInterrupt(digitalPinToInterrupt(BUTTON_PIN2), handleButtonPress, RISING);
     if (SPIFFS.exists("/ai_config.json")) {
         fs::File aiFile = SPIFFS.open("/ai_config.json", "r");
         if (aiFile) {
-            DynamicJsonDocument aiDoc(256);
+            DynamicJsonDocument aiDoc(384);
             DeserializationError aiErr = deserializeJson(aiDoc, aiFile);
             if (!aiErr) {
                 String aiKey = aiDoc["aiKey"] | "";
                 String aiEndpoint = aiDoc["aiEndpoint"] | "";
+                String aiBaseUrl = aiDoc["aiBaseUrl"] | "";
                 if (aiKey.length() > 0 && aiEndpoint.length() > 0) {
-                    aiAgent.configure(aiKey, aiEndpoint);
+                    aiAgent.configure(aiKey, aiEndpoint, aiBaseUrl);
                     Serial.println("DOUBAO: AI agent configured from SPIFFS");
                 }
             }
@@ -1534,6 +1586,8 @@ void loop()
         agentState = AGENT_BUSY;
         pendingAgentInput = false;
         String textToProcess = pendingAgentText;
+        activeAgentRequestId = pendingAgentRequestId;
+        agentResultStatus = "processing";
 
         Serial.printf("AI: Processing request: \"%s\"\n", textToProcess.c_str());
 
@@ -1543,11 +1597,13 @@ void loop()
 
         if (success) {
             dispatchAgentResponse(response);
+            agentResultStatus = "completed";
             Serial.println("AI: Response dispatched successfully");
         } else {
             // 使用后备响应
             AgentResponse fallback = aiAgent.getFallbackResponse();
             dispatchAgentResponse(fallback);
+            agentResultStatus = "failed";
             Serial.println("AI: Using fallback response");
         }
 
