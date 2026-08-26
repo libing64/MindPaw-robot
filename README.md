@@ -12,32 +12,40 @@
 </p>
 
 <p align="center">
+  <!-- 第一行：社交 + 核心文档入口 -->
   <a href="https://github.com/ace-trump-tech/MindPaw/stargazers" target="_blank">
     <img src="https://img.shields.io/github/stars/ace-trump-tech/MindPaw?style=social" alt="GitHub Stars">
   </a>
+  &nbsp;&nbsp;
   <a href="https://github.com/ace-trump-tech/MindPaw/fork" target="_blank">
     <img src="https://img.shields.io/github/forks/ace-trump-tech/MindPaw?style=social" alt="GitHub Forks">
   </a>
-<p align="center">
+  &nbsp;&nbsp;
   <a href="Docs/06_Quick_Start.md">
     <img src="https://img.shields.io/badge/Quick_Start-5分钟上手-brightgreen" alt="Quick Start">
   </a>
+  &nbsp;&nbsp;
   <a href="Docs/07_API_Guide.md">
     <img src="https://img.shields.io/badge/API_配置-图文教程-blue" alt="API Guide">
   </a>
+  &nbsp;&nbsp;
   <a href="Docs/04_Firmware_Flashing.md">
     <img src="https://img.shields.io/badge/烧录指南-VSCode+PlatformIO-orange" alt="Flashing Guide">
   </a>
+  <br><br>
+  <!-- 第二行：许可证 + 硬件 / 3D / 打样 -->
   <a href="LICENSE">
     <img src="https://img.shields.io/badge/License-MIT-green" alt="License">
   </a>
-  <br>
+  &nbsp;&nbsp;
   <a href="SCH&PCB/">
     <img src="https://img.shields.io/badge/PCB-立创EDA专业版-blueviolet" alt="PCB">
   </a>
+  &nbsp;&nbsp;
   <a href="3Dmodel/">
     <img src="https://img.shields.io/badge/3D打印-STL文件-yellow" alt="3D Model">
   </a>
+  &nbsp;&nbsp;
   <a href="https://oshwhub.com/">
     <img src="https://img.shields.io/badge/免费打样-嘉立创-red" alt="JLCPCB">
   </a>
