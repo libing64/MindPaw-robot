@@ -1,4 +1,8 @@
-MIT License
+MIT License (software scope)
+
+This license applies only to the software code and AI Gateway tooling in this
+repository. Hardware designs, 3D models, and documentation have the separate
+terms described in `CONTENT-LICENSE.md` and the root README.
 
 Copyright (c) 2026 ace-trump-tech
 
