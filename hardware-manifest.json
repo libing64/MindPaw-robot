@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "firmware_project": "MindPaw_main",
+  "board": "nodemcuv2 / ESP8266",
+  "source_of_truth": {
+    "firmware": "MindPaw_main/platformio.ini",
+    "wiring": "MindPaw_main/PIN_WIRING.md",
+    "schematic": "SCH&PCB/MindPaw_SCH&PCB.epro2",
+    "assembly": "Docs/05_Assembly_Guide.md"
+  },
+  "required_paths": [
+    "MindPaw_main/platformio.ini",
+    "MindPaw_main/src/main.cpp",
+    "MindPaw_main/PIN_WIRING.md",
+    "SCH&PCB/MindPaw_SCH&PCB.epro2",
+    "3Dmodel/body.stl",
+    "3Dmodel/bottom.stl",
+    "3Dmodel/foot.stl",
+    "Docs/01_Hardware_Guide.md",
+    "Docs/04_Firmware_Flashing.md",
+    "Docs/05_Assembly_Guide.md",
+    "ai-infra/gateway/app.py"
+  ]
+}

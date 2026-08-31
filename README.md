@@ -57,6 +57,7 @@
 - [硬件接线图](#-硬件接线图)
 - [文档索引](#-文档索引)
 - [常见问题](#-常见问题)
+- [维护与贡献](#-维护与贡献)
 - [许可证](#-许可证)
 
 ---
@@ -311,6 +312,7 @@ MindPaw/
 │
 ├── ai-infra/                   ← 独立 AI Gateway（可选，研究者教程）
 │   ├── gateway/app.py          ← OpenAI 兼容入口、鉴权和上游适配
+│   ├── tests/                  ← Gateway 契约单元测试
 │   ├── .env.example            ← 网关配置模板
 │   ├── Dockerfile              ← 容器部署
 │   └── README.md               ← 研究问题、实验路线和网关启动说明
@@ -327,6 +329,9 @@ MindPaw/
 │   ├── 05_Assembly_Guide.md    ← 结构组装与接线指南
 │   ├── 06_Quick_Start.md       ← 5 分钟快速上手
 │   └── 07_API_Guide.md         ← API 密钥获取指南
+│
+├── hardware-manifest.json      ← 硬件、固件和复现路径清单
+├── scripts/validate_project.py ← 自动校验清单和敏感配置
 │
 └── README.md                   ← 就是这个文件
 ```
@@ -406,6 +411,21 @@ MindPaw/
 ### 为什么 GPIO15 要下拉到 GND？
 
 这是 ESP8266 的硬件要求：GPIO15 在启动时如果为 HIGH，芯片会进入**测试模式**导致无法正常工作。10KΩ 电阻下拉确保启动时是 LOW。
+
+---
+
+## 🧰 维护与贡献
+
+MindPaw 同时包含固件、真实硬件、3D 模型和可选 AI Gateway。为了让贡献可以复现，提交前请先阅读：
+
+- [贡献指南](CONTRIBUTING.md)：变更范围、证据和人工验证要求
+- [支持与排障](SUPPORT.md)：按固件、接线、PCB、Gateway 分流问题
+- [安全策略](SECURITY.md)：物理执行器、API 密钥和漏洞报告
+- [硬件清单](hardware-manifest.json)：固件、接线、原理图和模型的权威路径
+
+Issue 不能只是一段无法验证的 AI 生成文本；作者必须亲自复现、提供日志或测量结果，并能回答维护者追问。AI 可以辅助检索、翻译和排版，但不能替代硬件安全审查和实验验证。
+
+仓库的 `Quality`、`Firmware build` 和 `Link check` 工作流会自动检查项目清单、Gateway 契约、固件编译和文档链接。涉及舵机、供电、引脚或动作协议的改动必须附上断电措施和兼容性说明。
 
 ---
 
