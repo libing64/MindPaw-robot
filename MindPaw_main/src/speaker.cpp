@@ -70,7 +70,7 @@ const Note Speaker::_beepMelody[] = {
 };
 
 // 旋律指针映射表
-static const Note* melodyMap[] = {
+const Note* Speaker::_melodyMap[] = {
     Speaker::_startupMelody,    // MELODY_STARTUP
     Speaker::_commandOkMelody,  // MELODY_COMMAND_OK
     Speaker::_errorMelody,      // MELODY_ERROR
@@ -82,7 +82,6 @@ static const Note* melodyMap[] = {
     Speaker::_doneMelody,       // MELODY_DONE
     Speaker::_beepMelody,       // MELODY_BEEP
 };
-static const uint8_t MELODY_COUNT = sizeof(melodyMap) / sizeof(melodyMap[0]);
 
 // ==================== 构造函数 ====================
 Speaker::Speaker(uint8_t pin) : _pin(pin) {
@@ -105,8 +104,8 @@ void Speaker::begin() {
 void Speaker::play(Melody melody) {
     if (_mute) return;
 
-    if (melody < MELODY_COUNT) {
-        const Note* notes = melodyMap[melody];
+    if (melody < sizeof(_melodyMap) / sizeof(_melodyMap[0])) {
+        const Note* notes = _melodyMap[melody];
         // 计算音符数量 (直到 freq=0)
         uint16_t count = 0;
         while (notes[count].freq != NOTE_REST || notes[count].duration > 0) {

@@ -6,7 +6,7 @@
 #include <math.h>
 
 // ==================== 步进序列 (离散动作) ====================
-const MotionStep MotionEmotion::_bowSteps[] = {
+const MotionEmotion::MotionStep MotionEmotion::_bowSteps[] = {
     {90, 90, 90, 90, 200},
     {40, 40, 140, 140, 500},   // 坐下
     {130, 130, 90, 90, 400},   // 前倾
@@ -16,7 +16,7 @@ const MotionStep MotionEmotion::_bowSteps[] = {
     {0, 0, 0, 0, 0},
 };
 
-const MotionStep MotionEmotion::_stretchSteps[] = {
+const MotionEmotion::MotionStep MotionEmotion::_stretchSteps[] = {
     {140, 140, 90, 90, 400},
     {90, 90, 40, 40, 400},
     {140, 140, 40, 40, 500},
@@ -24,7 +24,7 @@ const MotionStep MotionEmotion::_stretchSteps[] = {
     {0, 0, 0, 0, 0},
 };
 
-const MotionStep MotionEmotion::_hideFaceSteps[] = {
+const MotionEmotion::MotionStep MotionEmotion::_hideFaceSteps[] = {
     {140, 140, 90, 90, 400},
     {130, 130, 70, 70, 300},
     {140, 140, 90, 90, 500},
@@ -256,7 +256,7 @@ void MotionEmotion::applyOscillator(unsigned long elapsedMs) {
 }
 
 // ==================== 获取步进序列 ====================
-const MotionStep* MotionEmotion::getSteps(EmotionAction action, uint8_t& count) const {
+const MotionEmotion::MotionStep* MotionEmotion::getSteps(EmotionAction action, uint8_t& count) const {
     const MotionStep* steps = nullptr;
     count = 0;
     switch (action) {

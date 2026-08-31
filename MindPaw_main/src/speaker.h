@@ -150,6 +150,7 @@ private:
     static const Note _alertMelody[];
     static const Note _doneMelody[];
     static const Note _beepMelody[];
+    static const Note* _melodyMap[];
 };
 
 #endif // SPEAKER_H

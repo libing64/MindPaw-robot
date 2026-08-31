@@ -18,8 +18,8 @@ bool OV2640_Camera::initCamera() {
     uint8_t vid, pid;
     _cam->wrSensorReg8_8(0xFF, 0x01);
     delay(10);
-    vid = _cam->rdSensorReg8_8(0x0A);
-    pid = _cam->rdSensorReg8_8(0x0B);
+    _cam->rdSensorReg8_8(0x0A, &vid);
+    _cam->rdSensorReg8_8(0x0B, &pid);
 
     if (_debug) {
         Serial.printf("OV2640: VID=0x%02X PID=0x%02X\n", vid, pid);
@@ -35,7 +35,7 @@ bool OV2640_Camera::initCamera() {
     delay(50);
 
     // 关闭特殊效果
-    _cam->OV2640_set_Special_effects(NORMAL);
+    _cam->OV2640_set_Special_effects(Normal);
     delay(50);
 
     if (_debug) Serial.println("OV2640: Camera initialized");
@@ -95,8 +95,8 @@ bool OV2640_Camera::captureRawFrame() {
 
 // ==================== 读取 FIFO 字 (2 字节) ====================
 uint16_t OV2640_Camera::readFifoWord() {
-    uint8_t high = _cam->transfer(0x00);
-    uint8_t low  = _cam->transfer(0x00);
+    uint8_t high = _cam->read_fifo();
+    uint8_t low  = _cam->read_fifo();
     return ((uint16_t)high << 8) | low;
 }
 

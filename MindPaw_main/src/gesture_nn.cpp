@@ -19,11 +19,6 @@ const int8_t GestureNN::_w1[FEATURE_DIM * HIDDEN1_DIM] = {
     // ... 重复模式填充剩余 560 个元素
     // 实际使用时应由蒸馏脚本生成
 };
-// 使用 __attribute__((weak)) 允许外部重载
-// 但为编译简化，直接用 sizeof 初始化
-static_assert(sizeof(GestureNN::_w1) >= FEATURE_DIM * HIDDEN1_DIM,
-              "w1 size mismatch");
-
 // Bias 1: 16 int8
 const int8_t GestureNN::_b1[HIDDEN1_DIM] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 

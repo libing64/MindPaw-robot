@@ -32,8 +32,6 @@ const VoiceMapping HLKV20::DEFAULT_MAPPING[] = {
     {"CMD21", VOICE_BYE},
     {"CMD22", VOICE_ERROR},
 };
-static const uint8_t DEFAULT_MAPPING_COUNT = sizeof(HLKV20::DEFAULT_MAPPING) / sizeof(HLKV20::DEFAULT_MAPPING[0]);
-
 // ==================== 构造函数 ====================
 HLKV20::HLKV20() {
     _serial = nullptr;
@@ -43,7 +41,7 @@ HLKV20::HLKV20() {
     _linePos = 0;
     _lineBuf[0] = '\0';
     _mapping = DEFAULT_MAPPING;
-    _mappingCount = DEFAULT_MAPPING_COUNT;
+    _mappingCount = sizeof(DEFAULT_MAPPING) / sizeof(DEFAULT_MAPPING[0]);
 }
 
 // ==================== 初始化 ====================
