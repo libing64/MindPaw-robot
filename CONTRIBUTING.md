@@ -27,9 +27,35 @@ be labelled `needs-more-info` and closed after a reasonable response window.
 ```bash
 python3 scripts/validate_project.py
 python3 -m compileall -q ai-infra MindPaw_main/tools
-(cd ai-infra && python3 -m unittest discover -s tests -v)
+(cd ai-infra && python -m unittest discover -s tests -v)
+(cd ai-infra && python -m unittest discover -s recon/tests -p 'test_pipeline.py' -v)
 git diff --check
 ```
+
+## Perception layer (2.0)
+
+The `ai-infra/recon/` package adds a streaming 3D reconstruction service
+(modeled after ABot-Recon, see [Docs/09_Streaming_Recon.md](Docs/09_Streaming_Recon.md)).
+Contributions must keep the following guarantees:
+
+1. **Mock fallback must never regress.** If a contributor changes
+   `pipeline.py`, `backbone_student.py`, or `heads.py`, the service must
+   still return valid hazard JSON when no ONNX weights are present.
+   `python -m unittest discover -s recon/tests -p 'test_pipeline.py' -v`
+   must pass with no ONNX checkpoint on disk.
+2. **Device contract is bounded.** `schemas.py:HazardResponse` defines the
+   only JSON shape the device consumes. New fields are OK; removing or
+   weakening existing fields is not. Pydantic `field_validator`s are the
+   safety net — keep them.
+3. **No secrets in the repo.** Model weights, training data, and bearer
+   tokens never belong in the tree. Pre-trained checkpoints live outside
+   this repo and are pulled at deploy time (see `ai-infra/recon/README.md`).
+4. **End-to-end smoke before opening a PR.** With `uvicorn
+   recon.service:app --port 8001` running locally, the PR author must have
+   successfully `POST /recon/frame`'d a JPEG and seen a hazard response.
+5. **Latency claims must include the model variant.** When reporting FPS
+   numbers in PRs or the docs, state which back-end ran (mock / CPU
+   student / GPU student) and the host hardware.
 
 For firmware changes, also run `pio run --project-dir MindPaw_main` when
 PlatformIO is available. For motion or power changes, test with servos

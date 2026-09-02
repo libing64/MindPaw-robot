@@ -54,6 +54,11 @@ public:
     // 从 LLM 回复更新情感 (emotion 字段反馈)
     void updateFromLLMResponse(int8_t emotionCode);
 
+    // 2.0: 从流式 3D 重建感知层更新情感 (hazard + 最近障碍距离)
+    // hazard: 0=safe, 1=caution, 2=stop
+    // nearestMeters: 当前最近障碍距离 (m)
+    void updateFromReconHazard(uint8_t hazard, float nearestMeters);
+
     // 从手势分类结果更新
     void updateFromGesture(int8_t gestureClass, float confidence);
 

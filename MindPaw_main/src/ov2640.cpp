@@ -188,3 +188,42 @@ bool OV2640_Camera::captureGrayscale(uint8_t* buffer) {
 
     return true;
 }
+
+// ==================== 2.0: 捕获 JPEG 字节流 ====================
+// 摄像头当前已处于 JPEG 模式 (initCamera 设置 OV2640_160x120 + JPEG)，
+// captureRawFrame 直接走硬件 JPEG 编码路径，无需 BMP→JPEG 转码。
+// 推流路径: captureJpeg → multipart POST → ai-infra/recon:8001/recon/frame
+bool OV2640_Camera::captureJpeg(uint8_t* buffer, size_t bufLen, size_t& outLen) {
+    outLen = 0;
+    if (!_available || !buffer || bufLen == 0) return false;
+
+    // 已经在 JPEG 模式 (initCamera 设置)，无需 set_format
+    if (!captureRawFrame()) return false;
+
+    size_t fifoLen = _cam->read_fifo_length();
+    if (fifoLen == 0 || fifoLen >= 0x7FFFFF) {
+        if (_debug) Serial.println("OV2640: Invalid JPEG FIFO length");
+        return false;
+    }
+    if (fifoLen > bufLen) {
+        if (_debug) Serial.printf("OV2640: JPEG too large (%u > %u)\n", (unsigned)fifoLen, (unsigned)bufLen);
+        return false;
+    }
+
+    // Burst 读 FIFO
+    _cam->CS_LOW();
+    _cam->set_fifo_burst();
+    for (size_t i = 0; i < fifoLen; i++) {
+        buffer[i] = _cam->read_fifo();
+    }
+    _cam->CS_HIGH();
+    outLen = fifoLen;
+
+    _lastCaptureMs = millis();
+
+    if (_debug) {
+        Serial.printf("OV2640: JPEG %ux%u captured, %u bytes\n",
+                      CAM_JPEG_W, CAM_JPEG_H, (unsigned)outLen);
+    }
+    return true;
+}

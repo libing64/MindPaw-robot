@@ -8,6 +8,8 @@
 <p align="center">
   <em>桌面级四足机器狗 — 语音交互·手势识别·AI对话·网页控制</em>
   <br>
+  <strong>v2.0 — 新增流式 3D 重建感知层（端到端 ~150 ms，ABot-Recon 思想）</strong>
+  <br>
   <strong>总物料成本 ≈¥50，全开源</strong>
 </p>
 
@@ -81,9 +83,10 @@
 |------|---------|------|
 | **MindPaw Demo** | 初学者、硬件爱好者，目标是把机器狗复现并玩起来 | [MindPaw_main/README.md](MindPaw_main/README.md) |
 | **MindPaw AI Infra** | AI Infra、边缘计算和 Agent 研究者 | [ai-infra/README.md](ai-infra/README.md) |
+| **🛰️ MindPaw 2.0 流式 3D 重建** | 给机器狗加"看见前方"的能力（避障 + 浏览器点云） | [Docs/09_Streaming_Recon.md](Docs/09_Streaming_Recon.md) |
 | **SCH & PCB** | 想自己画板、打样或排查供电/接线问题的人 | [SCH&PCB/README.md](SCH%26PCB/README.md) |
 
-初学者不需要安装 Python、Docker 或 AI Gateway；完成基础 Demo 后，再按兴趣进入研究路径。两条路径共享同一套固件和硬件，Gateway 地址留空即可回到原有直连模式。
+初学者不需要安装 Python、Docker 或 AI Gateway；完成基础 Demo 后，再按兴趣进入研究路径。两条路径共享同一套固件和硬件，Gateway 地址留空即可回到原有直连模式。2.0 感知层默认关闭，在 aiconfig.html 里填一个 Recon Gateway URL 即可启用。
 
 ---
 
@@ -96,6 +99,7 @@
 | **网页控制** | 手机浏览器打开 192.168.4.1 | 完整的遥控界面，可点按控制 |
 | **AI 对话** | 网页聊天 / 语音说"你好" | 调用豆包 API，用动作+表情回复 |
 | **AI Infra 网关** | 可选配置 Gateway 地址 | 面向研究者的 AI 基础设施教程；初学者可以完全跳过 |
+| **🛰️ 流式 3D 重建感知层（v2.0）** | 摄像头自动推流 | 每帧推流到 Edge Gateway，机器狗能感知障碍距离并自动避障；浏览器可视化稀疏点云。详见 [Docs/09_Streaming_Recon.md](Docs/09_Streaming_Recon.md) |
 | **情感反应** | 持续运行中自动变化 | 根据交互频率和内容，表现出开心/无聊/难过等情绪 |
 | **表情显示** | OLED 屏幕显示 | 7 种表情 + 天气 + 时间 |
 | **声音反馈** | 扬声器播放旋律 | 开机/命令确认/情绪表达共 10 种音效 |
