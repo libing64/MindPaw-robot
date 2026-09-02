@@ -2,6 +2,10 @@
 // OV2640 摄像头模块 (ArduCAM Mini SPI)
 // 简化版 — 负责原始帧捕获和灰度缓冲提取
 // 手势分类委托给 GestureNN 模块
+//
+// 2.0 新增: captureJpeg() — 给流式 3D 重建感知层用，
+// 直接出 ArduCAM 编码好的 JPEG 字节流，无需 BMP→JPEG 转码。
+// 保留了 1.0 的 captureGrayscale()，两个路径互不干扰。
 //----------------------------------------------
 #ifndef OV2640_H
 #define OV2640_H
@@ -21,6 +25,10 @@
 #define CAM_GRAY_W  40
 #define CAM_GRAY_H  30
 
+// 2.0: JPEG 推流目标尺寸 (与 ai-infra/recon/mock_recon.py 保持一致)
+#define CAM_JPEG_W  160
+#define CAM_JPEG_H  120
+
 class OV2640_Camera {
 public:
     OV2640_Camera(uint8_t csPin = OV2640_CS);
@@ -32,6 +40,13 @@ public:
     // buffer: 必须至少 1200 字节 (40×30)
     // 返回: true=成功, false=失败
     bool captureGrayscale(uint8_t* buffer);
+
+    // 2.0: 捕获一帧 JPEG 字节流 (160×120, ArduCAM 硬件编码)
+    // buffer: 外部提供的缓冲；建议 ≥12 KB，QQVGA JPEG 通常 3–10 KB
+    // bufLen: buffer 容量
+    // outLen: 实际写入的字节数（<= bufLen）
+    // 返回: true=成功, false=失败 (摄像头不可用 / 超时 / 缓冲不够)
+    bool captureJpeg(uint8_t* buffer, size_t bufLen, size_t& outLen);
 
     // 设置捕获间隔 (ms，默认 500)
     void setInterval(unsigned long ms) { _intervalMs = ms; }

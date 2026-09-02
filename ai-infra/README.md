@@ -17,6 +17,7 @@ ESP8266 robot -> Edge Gateway -> local model / cloud LLM
 - 上游超时和错误转换
 - MindPaw 动作、表情、旋律 JSON Schema 的边界校验
 - Docker 和本地 Python 启动
+- **2.0 流式 3D 重建感知层** (`recon/`) —— 端到端 ~150 ms 避障延迟；详见 [recon/README.md](recon/README.md) 和 [Docs/09_Streaming_Recon.md](../Docs/09_Streaming_Recon.md)
 
 当前 Gateway 是研究起点，不宣称已经完成完整的调度系统。后续扩展应围绕可测量的系统问题，而不是单纯增加 Provider 数量。
 

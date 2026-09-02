@@ -1,6 +1,6 @@
 //----------------------------------------------
 //MindPaw Robot
-//CodeVersion:V1.1
+//CodeVersion:V2.0  (MindPaw 2.0 — 流式 3D 重建感知层)
 //---------------导入库--------------------------
 #include <Arduino.h>
 #include <Servo.h>
@@ -23,6 +23,7 @@
 #include "emotion_engine.h"
 #include "gesture_nn.h"
 #include "multimodal_fusion.h"
+#include "streaming_recon.h"    // 2.0: 流式 3D 重建感知层客户端
 //---------------按键部分--------------------------
 #define BUTTON_PIN 2 // GPIO2 引脚 (D4)
 #define BUTTON_PIN2 15
@@ -89,6 +90,10 @@ unsigned long lastInteractMs = 0; // 上次互动时间
 //---------------AI Agent 部分--------------------------
 DoubaoAgent aiAgent;            // 豆包 AI Agent
 MotionEmotion motionEmotion;    // 情感动作模块
+
+//---------------2.0: 流式 3D 重建感知层客户端--------------------------
+// 默认 disable; 在 /aiConfig 中填入 Recon Gateway URL 后由 configureReconClient() 启用。
+StreamingReconClient reconClient;
 AgentState agentState = AGENT_IDLE; // Agent 状态
 String pendingAgentText = "";   // 待处理文本
 String pendingAgentRequestId = "";
@@ -612,6 +617,53 @@ request->send(200, "text/html; charset=UTF-8",
         }
         // 如果文件不存在，返回404错误
         request->send(404, "text/plain", "File Not Found"); });
+
+    // ============================================================
+    // 2.0: 流式 3D 重建感知层 endpoints (不破坏 1.0 任何 handler)
+    // ============================================================
+
+    // 设备主动 poll: 拉取最新 hazard 决策 (给情感引擎 / OLED 显示用)
+    server.on("/recon/hazard", HTTP_GET, [](AsyncWebServerRequest *request) {
+        StaticJsonDocument<192> doc;
+        doc["hazard"]     = reconClient.getLastHazard();
+        doc["nearest_m"]  = reconClient.getLastNearestM();
+        doc["drift_cm"]   = reconClient.getLastDriftCm();
+        doc["frame_id"]   = reconClient.getLastFrameId();
+        doc["streaming"]  = reconClient.isStreaming();
+        String body;
+        serializeJson(doc, body);
+        request->send(200, "application/json", body);
+    });
+
+    // 启动推流循环 (在 setup 完 / 用户配置 URL 后调用一次)
+    server.on("/recon/start", HTTP_POST, [](AsyncWebServerRequest *request) {
+        bool ok = reconClient.startStreaming();
+        request->send(ok ? 200 : 503, "application/json",
+                      String("{\"status\":\"") + (ok ? "streaming" : "failed") + "\"}");
+    });
+
+    // 停止推流 (断电或 web 端按钮调用)
+    server.on("/recon/stop", HTTP_POST, [](AsyncWebServerRequest *request) {
+        bool ok = reconClient.stopStreaming();
+        request->send(ok ? 200 : 503, "application/json",
+                      String("{\"status\":\"") + (ok ? "stopped" : "failed") + "\"}");
+    });
+
+    // 浏览器查看器入口 (与 recon_view.html SPIFFS handler 平行; 两者都可访问)
+    server.on("/recon_view.html", HTTP_GET, [](AsyncWebServerRequest *request) {
+        if (SPIFFS.exists("/recon_view.html")) {
+            fs::File file = SPIFFS.open("/recon_view.html", "r");
+            if (file) {
+                String content;
+                while (file.available()) content += (char)file.read();
+                file.close();
+                request->send(200, "text/html", content);
+                return;
+            }
+        }
+        request->send(404, "text/plain", "File Not Found");
+    });
+
     // 启动服务器
     server.begin();
 };

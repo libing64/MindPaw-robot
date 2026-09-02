@@ -147,6 +147,18 @@
             <div class="hint">留空直连豆包；填写后通过独立 ai-infra 网关转发</div>
         </div>
 
+        <div class="field">
+            <label>🛰️ 流式 3D 重建网关地址（2.0 新增）</label>
+            <input type="url" id="reconUrl" placeholder="例如: http://192.168.4.2:8001">
+            <div class="hint">留空关闭感知层；填写后启用流式 3D 重建并自动避障</div>
+        </div>
+
+        <div class="field">
+            <label>感知层推流帧率（2.0 新增）</label>
+            <input type="number" id="reconFps" min="1" max="10" value="5">
+            <div class="hint">建议 3–8。明亮环境可用 8 FPS，弱光降到 3 FPS</div>
+        </div>
+
         <button class="btn btn-primary" onclick="saveConfig()">💾 保存配置</button>
         <button class="btn btn-secondary" onclick="testConnection()">🔌 测试连接</button>
 

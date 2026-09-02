@@ -231,6 +231,44 @@ void EmotionEngine::updateFromVoice(int8_t voiceCmd) {
     _clamp(_current);
 }
 
+// ==================== 2.0: 从感知层 hazard 更新 ====================
+// hazard=2 (STOP) → 短期惊讶 + 高度警觉 (高 arousal, 微负 pleasure)
+// hazard=1 (CAUTION) → 轻微警觉 + 中性 pleasure
+// hazard=0 (SAFE)   → 不主动扰动情感，让 PAD 自然衰减
+// nearestMeters 用于在 OLED 上显示具体距离（这里只更新情感状态）
+void EmotionEngine::updateFromReconHazard(uint8_t hazard, float nearestMeters) {
+    (void)nearestMeters;  // 情感模型暂不直接使用数值；保留参数便于扩展
+    float targetP = _baseline.pleasure;
+    float targetA = _baseline.arousal;
+    float targetD = _baseline.dominance;
+
+    switch (hazard) {
+        case 2:  // STOP — 惊讶 + 警觉
+            targetP = -0.10f;
+            targetA = 0.75f;
+            targetD = 0.20f;
+            break;
+        case 1:  // CAUTION — 轻微警觉
+            targetA = 0.55f;
+            break;
+        case 0:  // SAFE — 不主动扰动
+        default:
+            return;
+    }
+
+    // hazard 触发的情感变化要快 (50ms 级反馈)，但衰减也快，避免长期干扰
+    _emaUpdate(_current.pleasure, targetP, 0.6f, 0.0f);
+    _emaUpdate(_current.arousal,  targetA, 0.6f, 0.0f);
+    _emaUpdate(_current.dominance, targetD, 0.4f, 0.0f);
+    _clamp(_current);
+
+    if (_debug) {
+        Serial.printf("EMOTION: ReconHazard(%u) nearest=%.2fm → P=%.2f A=%.2f D=%.2f [%s]\n",
+                      hazard, nearestMeters,
+                      _current.pleasure, _current.arousal, _current.dominance, getEmotionLabel());
+    }
+}
+
 // ==================== VAD-to-Motion 映射 ====================
 int8_t EmotionEngine::recommendAction() const {
     float p = _current.pleasure;
