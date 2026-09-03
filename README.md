@@ -58,6 +58,7 @@
 - [AI Infra 网关](#-ai-infra-网关)
 - [硬件接线图](#-硬件接线图)
 - [文档索引](#-文档索引)
+- [分支与版本](#-分支与版本)
 - [常见问题](#-常见问题)
 - [维护与贡献](#-维护与贡献)
 - [许可证](#-许可证)
@@ -384,6 +385,44 @@ MindPaw/
 | **从零复现固件 Demo** | [MindPaw_main/README.md](MindPaw_main/README.md) |
 | **研究 AI Infra 和边缘-云 Agent** | [ai-infra/README.md](ai-infra/README.md) |
 | **导入/修改/打样 PCB** | [SCH&PCB/README.md](SCH%26PCB/README.md) |
+
+---
+
+## 🌿 分支与版本
+
+仓库当前有两条远程分支，分别承担不同角色：
+
+| 分支 | 状态 | 说明 |
+|---|---|---|
+| **`main`** | ✅ 受保护候选（建议在 GitHub Settings → Branches 加规则） | 稳定发布线。当前是 [MindPaw 2.0](https://github.com/ace-trump-tech/MindPaw/releases/tag/v2.0.0)。 |
+| **`feature/2.0-streaming-recon`** | ✅ 已合并进 `main`（merge commit `4900898`） | 2.0 感知层开发分支。代码已经在 `main`，可以安全删除。 |
+
+### 推荐的 main 保护规则
+
+GitHub 网页会提示 *"Your main branch isn't protected"*。建议在
+**Settings → Branches → Add rule** 加：
+
+- ✅ Require a pull request before merging
+- ✅ Require status checks to pass before merging（至少勾上 `docs-and-manifest` + `gateway-tests` + `recon-tests` 三个 job）
+- ✅ Do not allow force pushes
+- ✅ Do not allow deletions
+- ✅ Require linear history（可选；如果想保留 `--no-ff` merge commit 就**不要**勾这个）
+
+### 清理已合并的 feature 分支
+
+```bash
+git push origin --delete feature/2.0-streaming-recon
+git branch -d feature/2.0-streaming-recon       # 本地
+```
+
+### 发布历史
+
+| Tag | Commit | 备注 |
+|---|---|---|
+| `v2.0.0` | `ac65e8c` | MindPaw 2.0 — 流式 3D 重建感知层 |
+| (older) | — | MindPaw 1.x — 桌面狗 + 豆包对话 + 情感反应 |
+
+详细 changelog 见 [`RELEASE_NOTES.md`](RELEASE_NOTES.md)。
 
 ---
 
