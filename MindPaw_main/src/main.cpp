@@ -451,26 +451,27 @@ request->send(200, "text/html; charset=UTF-8",
 
     server.on("/", HTTP_GET, [](AsyncWebServerRequest *request)
               {
-        // 检查SPIFFS文件系统中是否存在index.html文件
-        if (SPIFFS.exists("/index.html")) {
-            fs::File file = SPIFFS.open("/index.html", "r");  // 打开index.html文件
-            if (file) {
-                size_t fileSize = file.size();  // 获取文件大小
-                String fileContent;
-
-                // 逐字节读取文件内容
-                while (file.available()) {
-                    fileContent += (char)file.read();
-                }
-                file.close();  // 关闭文件
-
-                // 返回HTML内容
-                request->send(200, "text/html", fileContent);
-                return;
-            }
+        // 首页直接进控制台，避免登录页被当成“无内容”
+        if (SPIFFS.exists("/home.html")) {
+            request->send(SPIFFS, "/home.html", "text/html");
+            return;
         }
-        // 如果文件不存在，返回404错误
-        request->send(404, "text/plain", "File Not Found"); });
+        if (SPIFFS.exists("/index.html")) {
+            request->send(SPIFFS, "/index.html", "text/html");
+            return;
+        }
+        request->send(200, "text/html",
+            "<!DOCTYPE html><html><head><meta charset='UTF-8'><title>MindPaw</title></head>"
+            "<body><h1>网页文件未找到</h1>"
+            "<p>请在电脑执行: pio run --project-dir MindPaw_main -t uploadfs</p>"
+            "</body></html>"); });
+    server.onNotFound([](AsyncWebServerRequest *request) {
+        if (SPIFFS.exists("/home.html")) {
+            request->send(SPIFFS, "/home.html", "text/html");
+            return;
+        }
+        request->send(200, "text/plain", "Open http://192.168.4.1/");
+    });
     server.on("/control.html", HTTP_GET, [](AsyncWebServerRequest *request)
               {
         // 检查SPIFFS文件系统中是否存在index.html文件

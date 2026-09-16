@@ -107,12 +107,7 @@
 
     <script>
         function doLogin() {
-            var name = document.getElementById('usernameInput').value.trim();
-            if (name === '庹忠曜' || name === '王家丽') {
-                window.location.href = './home.html';
-            } else {
-                document.getElementById('errorMsg').innerText = '姓名错误，请重新输入';
-            }
+            window.location.href = './home.html';
         }
 
         document.getElementById('usernameInput').addEventListener('keydown', function(e) {
