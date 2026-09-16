@@ -83,9 +83,9 @@ private:
     void _parseHazardJson(const String& body);
 
     static String _buildBoundary();
-    static String _buildMultipartBody(const String& boundary,
-                                      unsigned long frameId,
-                                      const uint8_t* jpegBytes, size_t jpegLen);
+    String _buildMultipartBody(const String& boundary,
+                               unsigned long frameId,
+                               const uint8_t* jpegBytes, size_t jpegLen);
 };
 
 #endif // STREAMING_RECON_H
